@@ -169,6 +169,29 @@ export function activate(context: vscode.ExtensionContext) {
 
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand('hexdump.openHexDumpAtAddress', (fileUri, address) => {
+        if (fileUri === undefined || address === undefined || !(fileUri instanceof vscode.Uri)) {
+            return;
+        }
+
+        const path: string = fileUri.fsPath;
+
+        if (path === undefined) {
+            return;
+        }
+
+        if (!fs.existsSync(path)) {
+            return;
+        }
+
+        const hexDumpUri = vscode.Uri.file(path.concat('.hexdump')).with({ scheme: 'hexdump' });;
+       
+        vscode.commands.executeCommand('vscode.open', hexDumpUri).then(() => {
+            vscode.commands.executeCommand('hexdump.gotoAddress', address);
+        });
+
+    }));
+
     context.subscriptions.push(vscode.commands.registerCommand('hexdump.editValue', () => {
         let e = vscode.window.activeTextEditor;
         let d = e.document;
@@ -276,7 +299,7 @@ export function activate(context: vscode.ExtensionContext) {
             var pos = e.document.validatePosition(getPosition(offset).translate(0, 1));
             e.selection = new vscode.Selection(pos, pos);
             e.revealRange(new vscode.Range(pos, pos));
-
+            
         });
     }));
 
@@ -365,7 +388,7 @@ export function activate(context: vscode.ExtensionContext) {
 
             var buf = getBuffer(d.uri);
 
-            var index = buf.indexOf(value, offset, charEncoding);
+            var index = buf.indexOf(value, offset, "utf-8");
 
             if (index == -1) {
                 vscode.window.setStatusBarMessage("string not found", 3000);
